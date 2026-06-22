@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>今日三餐抽選器</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      background:
+        radial-gradient(circle at top, rgba(255, 255, 255, 0.18), transparent 20%),
+        linear-gradient(135deg, #fef3c7 0%, #fdf2f8 45%, #eef2ff 100%);
+    }
+
+    .meal-card {
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .meal-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 15px 35px rgba(15, 23, 42, 0.08);
+    }
+
+    .meal-card::after {
+      content: '';
+      position: absolute;
+      inset: auto 12% 12%;
+      height: 3px;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.9), transparent);
+      border-radius: 999px;
+      pointer-events: none;
+    }
+
+    .slot-window {
+      height: 4rem;
+      overflow: hidden;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(to bottom, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.4));
+      border-radius: 0.9rem;
+      border: 1px solid rgba(255, 255, 255, 0.6);
+    }
+
+    .slot-window::before,
+    .slot-window::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      right: 0;
+      height: 1rem;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    .slot-window::before {
+      top: 0;
+      background: linear-gradient(to bottom, rgba(255, 255, 255, 0.9), transparent);
+    }
+
+    .slot-window::after {
+      bottom: 0;
+      background: linear-gradient(to top, rgba(255, 255, 255, 0.9), transparent);
+    }
+
+    .rolling {
+      animation: pulse 0.18s ease-in-out infinite alternate;
+    }
+
+    @keyframes pulse {
+      from { transform: scale(1); }
+      to { transform: scale(1.02); }
+    }
+  </style>
+</head>
+<body class="min-h-screen text-slate-800">
+  <main class="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+    <section class="rounded-3xl bg-white/70 shadow-xl backdrop-blur-xl ring-1 ring-slate-200/70">
+      <div class="px-6 py-8 sm:px-10 sm:py-10">
+        <div class="flex flex-col items-center gap-3 text-center">
+          <span class="inline-flex rounded-full bg-amber-100 px-3 py-1 text-sm font-medium text-amber-700">今日吃什麼？</span>
+          <h1 class="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">三餐隨機決定器</h1>
+          <p class="text-sm text-slate-500 sm:text-base">讓今天的餐點也有點運氣成分</p>
+        </div>
+
+        <div class="mt-8 grid gap-4 sm:grid-cols-3">
+          <div class="meal-card rounded-2xl bg-gradient-to-br from-amber-50 to-orange-50 p-5 shadow-sm ring-1 ring-amber-100">
+            <div class="flex items-center justify-between">
+              <h2 class="text-lg font-semibold text-amber-800">早餐</h2>
+              <span class="text-2xl">🌞</span>
+            </div>
+            <div class="mt-4 slot-window">
+              <p id="breakfast-result" class="text-xl font-semibold text-slate-800">準備中…</p>
+            </div>
+          </div>
+
+          <div class="meal-card rounded-2xl bg-gradient-to-br from-emerald-50 to-lime-50 p-5 shadow-sm ring-1 ring-emerald-100">
+            <div class="flex items-center justify-between">
+              <h2 class="text-lg font-semibold text-emerald-800">午餐</h2>
+              <span class="text-2xl">☀️</span>
+            </div>
+            <div class="mt-4 slot-window">
+              <p id="lunch-result" class="text-xl font-semibold text-slate-800">準備中…</p>
+            </div>
+          </div>
+
+          <div class="meal-card rounded-2xl bg-gradient-to-br from-indigo-50 to-blue-50 p-5 shadow-sm ring-1 ring-indigo-100">
+            <div class="flex items-center justify-between">
+              <h2 class="text-lg font-semibold text-indigo-800">晚餐</h2>
+              <span class="text-2xl">🌙</span>
+            </div>
+            <div class="mt-4 slot-window">
+              <p id="dinner-result" class="text-xl font-semibold text-slate-800">準備中…</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-8 flex justify-center">
+          <button id="roll-button" class="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-pink-500 to-rose-500 px-8 py-4 text-lg font-semibold text-white shadow-lg shadow-pink-300/50 transition duration-200 hover:from-pink-600 hover:to-rose-600 active:scale-95 disabled:cursor-not-allowed disabled:opacity-70">
+            一鍵決定今天吃什麼！
+          </button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const menus = {
+      breakfast: [
+        '蛋餅', '豆漿', '燒餅', '牛奶麥片', '飯糰', '蔥抓餅', '蘿蔔糕', '饅頭', '鮪魚吐司', '漢堡',
+        '古早味粥', '雞蛋糕', '早餐三明治', '蒸蛋', '玉米濃湯'
+      ],
+      lunch: [
+        '雞腿便當', '牛肉麵', '日式丼飯', '咖哩飯', '滷肉飯', '炸雞飯', '火鍋', '義大利麵', '壽司',
+        '炒飯', '麵線', '燒肉定食', '鹹酥雞', '擔仔麵'
+      ],
+      dinner: [
+        '烤肉', '麻辣鍋', '魚片湯', '炒青菜', '煎餃', '泡菜鍋', '烤魚', '牛排', '雞肉咖哩',
+        '砂鍋魚頭', '蔥油餅', '焢烤雞腿', '義式燉飯', '牛肉湯'
+      ]
+    };
+
+    const resultEls = {
+      breakfast: document.getElementById('breakfast-result'),
+      lunch: document.getElementById('lunch-result'),
+      dinner: document.getElementById('dinner-result')
+    };
+
+    const button = document.getElementById('roll-button');
+    const cardEls = document.querySelectorAll('.meal-card');
+
+    function getRandomItem(list) {
+      return list[Math.floor(Math.random() * list.length)];
+    }
+
+    function animateMeal(mealKey, duration = 1800) {
+      const el = resultEls[mealKey];
+      const options = menus[mealKey];
+      let interval = setInterval(() => {
+        el.textContent = getRandomItem(options);
+      }, 70);
+
+      setTimeout(() => {
+        clearInterval(interval);
+        el.textContent = getRandomItem(options);
+      }, duration);
+    }
+
+    function rollAll() {
+      button.disabled = true;
+      button.textContent = '抽選中...';
+      cardEls.forEach(card => card.classList.add('rolling'));
+
+      animateMeal('breakfast');
+      animateMeal('lunch');
+      animateMeal('dinner');
+
+      setTimeout(() => {
+        cardEls.forEach(card => card.classList.remove('rolling'));
+        button.disabled = false;
+        button.textContent = '一鍵決定今天吃什麼！';
+      }, 1900);
+    }
+
+    button.addEventListener('click', rollAll);
+
+    // First display on load
+    Object.keys(resultEls).forEach(key => {
+      resultEls[key].textContent = getRandomItem(menus[key]);
+    });
+  </script>
+</body>
+</html>
